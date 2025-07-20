@@ -19,6 +19,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
   useMediaQuery,
   useTheme
@@ -27,6 +28,98 @@ import {
   WhatsApp as WhatsAppIcon,
   ContentCopy as ContentCopyIcon
 } from '@mui/icons-material';
+
+// Componente para edição inline da data de pagamento
+const InlineDateEditor = ({ payment, onDateChange }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [dateValue, setDateValue] = useState(() => {
+    if (payment.dataPagamento) {
+      const date = new Date(payment.dataPagamento);
+      if (!isNaN(date.getTime())) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+    }
+    return '';
+  });
+
+  const handleSave = async () => {
+    try {
+      await onDateChange(dateValue || null);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Erro ao salvar data:', error);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      setDateValue(payment.dataPagamento ? formatDateForInput(payment.dataPagamento) : '');
+      setIsEditing(false);
+    }
+  };
+
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (!isNaN(date.getTime())) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    return '';
+  };
+
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return '-';
+    try {
+      const date = parseISO(dateString);
+      return format(date, 'dd/MM/yyyy', { locale: ptBR });
+    } catch {
+      return '-';
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <TextField
+        type="date"
+        value={dateValue}
+        onChange={(e) => setDateValue(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={handleKeyPress}
+        size="small"
+        autoFocus
+        sx={{
+          '& .MuiInputBase-root': {
+            fontSize: '0.875rem'
+          }
+        }}
+      />
+    );
+  }
+
+  return (
+    <Box
+      onClick={() => setIsEditing(true)}
+      sx={{
+        cursor: 'pointer',
+        padding: '4px 8px',
+        borderRadius: '4px',
+        '&:hover': {
+          backgroundColor: '#f5f5f5'
+        }
+      }}
+    >
+      {formatDateForDisplay(payment.dataPagamento)}
+    </Box>
+  );
+};
 
 const PaymentList = () => {
   const theme = useTheme();
@@ -95,6 +188,19 @@ const PaymentList = () => {
       await loadPayments();
     } catch (err) {
       setError('Erro ao atualizar status');
+    }
+  };
+
+  const handleDatePaymentChange = async (payment, newDate) => {
+    try {
+      const update = {
+        dataPagamento: newDate
+      };
+      await PaymentService.update(payment.id, update);
+      await loadPayments();
+    } catch (err) {
+      setError('Erro ao atualizar data de pagamento');
+      throw err; // Re-throw para que o InlineDateEditor possa tratar
     }
   };
 
@@ -386,7 +492,7 @@ const PaymentList = () => {
             </Box>
           ) : (
             // Desktop Table Layout
-            <TableContainer component={Paper} sx={{ backgroundColor: '#fff' }}>
+            <TableContainer component={Paper} sx={{ backgroundColor: '#fff', borderRadius: 0 }}>
               <Table>
                 <TableHead>
                   <TableRow sx={{ 
@@ -444,7 +550,12 @@ const PaymentList = () => {
                           />
                         </Box>
                       </TableCell>
-                      <TableCell sx={{ color: '#2c3e50' }}>{payment.dataPagamento ? formatDate(payment.dataPagamento) : '-'}</TableCell>
+                      <TableCell sx={{ color: '#2c3e50', minWidth: '140px' }}>
+                        <InlineDateEditor 
+                          payment={payment}
+                          onDateChange={(newDate) => handleDatePaymentChange(payment, newDate)}
+                        />
+                      </TableCell>
                       <TableCell align="center">
                         <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
                           <Button
@@ -509,12 +620,17 @@ const PaymentList = () => {
         </Button>
       </Box>
 
-      <Paper elevation={3} sx={{ 
-        p: { xs: 2, sm: 3 }, 
-        mb: 3, 
-        backgroundColor: '#f8f9fa',
-        mx: { xs: 1, sm: 0 }
-      }}>
+      <Box sx={{ width: '100%' }}>
+        <Card sx={{ 
+          mb: 3, 
+          backgroundColor: '#f0f2f5 !important',
+          mx: { xs: 0, sm: 0 },
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15) !important',
+          border: '2px solid #d1d5db !important',
+          borderRadius: '12px !important',
+          borderLeft: '4px solid #2c3e50 !important'
+        }}>
+          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
         <Typography 
           variant="h5" 
           gutterBottom 
@@ -601,7 +717,9 @@ const PaymentList = () => {
             </IconButton>
           </Box>
         </Box>
-      </Paper>
+          </CardContent>
+        </Card>
+      </Box>
 
       {renderMonthlyPayments()}
     </Container>

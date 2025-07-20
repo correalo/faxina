@@ -57,10 +57,23 @@ const PaymentForm = ({ payment, onClose, onSave }) => {
       // Format value without division (values are already in correct format)
       const valor = payment.valor ? payment.valor.toString().replace('.', ',') : '';
       
+      // Format dataPagamento for date input (YYYY-MM-DD)
+      let formattedDataPagamento = '';
+      if (payment.dataPagamento) {
+        const datePag = new Date(payment.dataPagamento);
+        if (!isNaN(datePag.getTime())) {
+          const year = datePag.getFullYear();
+          const month = String(datePag.getMonth() + 1).padStart(2, '0');
+          const day = String(datePag.getDate()).padStart(2, '0');
+          formattedDataPagamento = `${year}-${month}-${day}`;
+        }
+      }
+      
       return {
         ...payment,
         data: formattedDate,
-        valor
+        valor,
+        dataPagamento: formattedDataPagamento
       };
     }
     return {
@@ -128,9 +141,9 @@ const PaymentForm = ({ payment, onClose, onSave }) => {
         valor: formData.valor ? parseFloat(formData.valor.replace(',', '.')) : 0,
         // Campos opcionais com lógica pragmática
         realizada: formData.realizada !== undefined ? formData.realizada : false,
-        paga: formData.paga || 'PAGA', // Usar valor que funciona no sistema atual
+        paga: formData.paga ? 'PAGA' : '', // Corrigido: só define 'PAGA' se realmente marcado
         observacao: formData.observacao !== undefined ? formData.observacao : '',
-        dataPagamento: formData.dataPagamento || null
+        dataPagamento: formData.dataPagamento && formData.dataPagamento.trim() ? formData.dataPagamento : null
       };
       if (payment?.id) {
         await PaymentService.update(payment.id, submitData);
@@ -252,8 +265,8 @@ const PaymentForm = ({ payment, onClose, onSave }) => {
                     const isPaga = e.target.checked;
                     setFormData(prev => ({
                       ...prev,
-                      paga: isPaga ? 'PAGA' : '',
-                      dataPagamento: isPaga ? new Date().toISOString().split('T')[0] : null
+                      paga: isPaga ? 'PAGA' : ''
+                      // Removido: dataPagamento automático - agora é editável pelo usuário
                     }));
                   }}
                   name="paga"
@@ -263,6 +276,25 @@ const PaymentForm = ({ payment, onClose, onSave }) => {
               label={<Typography variant={isMobile ? 'body2' : 'body1'}>PAGA</Typography>}
             />
           </Box>
+
+          <TextField
+            fullWidth
+            type="date"
+            id="dataPagamento"
+            name="dataPagamento"
+            label="Data Pagamento"
+            value={formData.dataPagamento || ''}
+            onChange={handleChange}
+            InputLabelProps={{ shrink: true }}
+            size={isMobile ? 'small' : 'medium'}
+            sx={{
+              mb: isMobile ? 1 : 2,
+              '& .MuiInputBase-root': {
+                height: isMobile ? '40px' : '56px'
+              }
+            }}
+            helperText="Deixe vazio se não houver data de pagamento"
+          />
 
           <TextField
             fullWidth
