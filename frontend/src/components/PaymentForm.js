@@ -134,11 +134,11 @@ const PaymentForm = ({ payment, onClose, onSave }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Format valor for backend (send as decimal number)
+      // Format valor for backend (send in centavos - multiply by 100)
       const submitData = {
         dataString: formData.data, // Use dataString field to avoid timezone issues
         data: formData.data, // Keep for compatibility
-        valor: formData.valor ? parseFloat(formData.valor.replace(',', '.')) : 0,
+        valor: formData.valor ? Math.round(parseFloat(formData.valor.replace(',', '.')) * 100) : 0,
         // Campos opcionais com lógica pragmática
         realizada: formData.realizada !== undefined ? formData.realizada : false,
         paga: formData.paga ? 'PAGA' : '', // Corrigido: só define 'PAGA' se realmente marcado

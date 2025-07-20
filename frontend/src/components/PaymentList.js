@@ -10,6 +10,11 @@ import {
   CardContent,
   Checkbox,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   FormControlLabel,
   IconButton,
   Paper,
@@ -140,6 +145,8 @@ const PaymentList = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState(null);
 
   useEffect(() => {
     loadPayments();
@@ -161,15 +168,35 @@ const PaymentList = () => {
     setShowEditForm(true);
   };
 
-  const handleDelete = async (paymentId) => {
-    if (window.confirm('Tem certeza que deseja excluir este pagamento?')) {
-      try {
-        await PaymentService.delete(paymentId);
-        await loadPayments();
-      } catch (err) {
-        setError('Erro ao excluir pagamento');
-      }
+  const handleDelete = (paymentId) => {
+    console.log('=== HANDLE DELETE DEBUG ===');
+    console.log('handleDelete called with paymentId:', paymentId);
+    console.log('typeof paymentId:', typeof paymentId);
+    
+    setPaymentToDelete(paymentId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    console.log('User confirmed deletion');
+    try {
+      console.log('Calling PaymentService.delete with:', paymentToDelete);
+      const result = await PaymentService.delete(paymentToDelete);
+      console.log('Delete result:', result);
+      await loadPayments();
+      console.log('Payments reloaded after deletion');
+    } catch (err) {
+      console.error('Error deleting payment:', err);
+      setError('Erro ao excluir pagamento');
     }
+    setDeleteConfirmOpen(false);
+    setPaymentToDelete(null);
+  };
+
+  const handleDeleteCancel = () => {
+    console.log('User cancelled deletion');
+    setDeleteConfirmOpen(false);
+    setPaymentToDelete(null);
   };
 
   const handlePaymentUpdated = async () => {
@@ -184,7 +211,7 @@ const PaymentList = () => {
         realizada: field === 'realizada' ? !payment.realizada : payment.realizada,
         paga: field === 'paga' ? (payment.paga === 'PAGA' ? '' : 'PAGA') : payment.paga
       };
-      await PaymentService.updateStatus(payment.id, update);
+      await PaymentService.updateStatus(payment._id, update);
       await loadPayments();
     } catch (err) {
       setError('Erro ao atualizar status');
@@ -196,7 +223,7 @@ const PaymentList = () => {
       const update = {
         dataPagamento: newDate
       };
-      await PaymentService.update(payment.id, update);
+      await PaymentService.update(payment._id, update);
       await loadPayments();
     } catch (err) {
       setError('Erro ao atualizar data de pagamento');
@@ -468,7 +495,11 @@ const PaymentList = () => {
                             variant="contained"
                             size="medium"
                             color="error"
-                            onClick={() => handleDelete(payment.id)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDelete(payment._id);
+                            }}
                             sx={{
                               backgroundColor: '#e74c3c',
                               '&:hover': {
@@ -513,7 +544,7 @@ const PaymentList = () => {
                 </TableHead>
                 <TableBody>
                   {payments.map((payment) => (
-                    <TableRow key={payment.id} sx={{ '&:nth-of-type(even)': { backgroundColor: '#f8f9fa' }, '&:nth-of-type(odd)': { backgroundColor: '#fff' } }}>
+                    <TableRow key={payment._id} sx={{ '&:nth-of-type(even)': { backgroundColor: '#f8f9fa' }, '&:nth-of-type(odd)': { backgroundColor: '#fff' } }}>
                       <TableCell sx={{ color: '#2c3e50' }}>{formatDate(payment.data, payment)}</TableCell>
                       <TableCell sx={{ color: '#2c3e50' }}>{formatCurrency(payment.valor)}</TableCell>
                       <TableCell>
@@ -575,7 +606,11 @@ const PaymentList = () => {
                             variant="contained"
                             size="small"
                             color="error"
-                            onClick={() => handleDelete(payment.id)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDelete(payment._id);
+                            }}
                             sx={{
                               backgroundColor: '#e74c3c',
                               '&:hover': {
@@ -722,6 +757,31 @@ const PaymentList = () => {
       </Box>
 
       {renderMonthlyPayments()}
+      
+      {/* Custom Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Confirmar Exclusão
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Tem certeza que deseja excluir este pagamento? Esta ação não pode ser desfeita.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="primary">
+            Cancelar
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Excluir
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
