@@ -10,17 +10,14 @@ if (mongoose.connection.models.Payment) {
 
 // Schema completamente novo sem validações problemáticas
 const paymentSchema = new mongoose.Schema({
-  data: Date,
+  dataString: {
+    type: String,
+    required: true
+  },
+  data: Date, // Mantido para compatibilidade
   valor: {
     type: Number,
-    get: v => v ? (v/100).toFixed(2) : '0.00',
-    set: v => {
-      // Conversão inteligente - se já está em centavos, não multiplicar
-      if (typeof v === 'number') {
-        return v > 1000 ? v : Math.round(v * 100);
-      }
-      return v;
-    }
+    default: 0
   },
   realizada: { type: Boolean, default: false },
   paga: { type: String, default: '' }, // Mesma lógica do campo realizada
@@ -35,7 +32,10 @@ const paymentSchema = new mongoose.Schema({
 
 // Virtual para o mês/ano do pagamento
 paymentSchema.virtual('monthYear').get(function() {
-  return `${this.data.getFullYear()}-${(this.data.getMonth() + 1).toString().padStart(2, '0')}`;
+  if (this.dataString && typeof this.dataString === 'string') {
+    return this.dataString.substring(0, 7); // Get "2024-07" from "2024-07-18"
+  }
+  return '';
 });
 
 // Pre-hook removido para evitar interferência na validação

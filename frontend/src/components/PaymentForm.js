@@ -21,10 +21,45 @@ const PaymentForm = ({ payment, onClose, onSave }) => {
 
   const [formData, setFormData] = useState(() => {
     if (payment) {
-      // If editing, convert backend value (cents) to display value
-      const valor = payment.valor ? (payment.valor / 100).toFixed(2).replace('.', ',') : '';
+      console.log('=== PAYMENT FORM INITIALIZATION DEBUG ===');
+      console.log('Original payment object:', payment);
+      console.log('payment.dataString:', payment.dataString);
+      console.log('payment.data:', payment.data);
+      
+      // Format date for input field (YYYY-MM-DD) - avoiding timezone issues
+      let formattedDate = '';
+      if (payment.dataString) {
+        console.log('Using dataString:', payment.dataString);
+        // Use dataString if available (already in YYYY-MM-DD format)
+        formattedDate = payment.dataString;
+      } else if (payment.data) {
+        console.log('Using payment.data:', payment.data);
+        const date = new Date(payment.data);
+        console.log('Date object created:', date);
+        console.log('Date toString():', date.toString());
+        console.log('Date toISOString():', date.toISOString());
+        console.log('Date getFullYear():', date.getFullYear());
+        console.log('Date getMonth():', date.getMonth());
+        console.log('Date getDate():', date.getDate());
+        
+        if (!isNaN(date.getTime())) {
+          // Use local date to avoid timezone conversion issues
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          formattedDate = `${year}-${month}-${day}`;
+          console.log('Formatted date result:', formattedDate);
+        }
+      }
+      
+      console.log('Final formattedDate:', formattedDate);
+      
+      // Format value without division (values are already in correct format)
+      const valor = payment.valor ? payment.valor.toString().replace('.', ',') : '';
+      
       return {
         ...payment,
+        data: formattedDate,
         valor
       };
     }
@@ -88,7 +123,8 @@ const PaymentForm = ({ payment, onClose, onSave }) => {
     try {
       // Format valor for backend (send as decimal number)
       const submitData = {
-        data: formData.data,
+        dataString: formData.data, // Use dataString field to avoid timezone issues
+        data: formData.data, // Keep for compatibility
         valor: formData.valor ? parseFloat(formData.valor.replace(',', '.')) : 0,
         // Campos opcionais com lógica pragmática
         realizada: formData.realizada !== undefined ? formData.realizada : false,

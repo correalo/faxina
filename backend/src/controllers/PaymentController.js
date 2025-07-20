@@ -100,16 +100,39 @@ exports.create = async (req, res) => {
 // Atualizar pagamento
 exports.update = async (req, res) => {
   try {
+    console.log('=== UPDATING PAYMENT ===');
+    console.log('Request body:', req.body);
+    
+    // Ensure dataString is set properly
+    const updateData = { ...req.body };
+    
+    // If data is provided but not dataString, convert it
+    if (updateData.data && !updateData.dataString) {
+      const date = new Date(updateData.data);
+      if (!isNaN(date.getTime())) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        updateData.dataString = `${year}-${month}-${day}`;
+      }
+    }
+    
+    console.log('Update data processed:', updateData);
+    
     const payment = await Payment.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
+    
     if (!payment) {
       return res.status(404).json({ message: 'Pagamento não encontrado' });
     }
+    
+    console.log('Payment updated successfully:', payment);
     res.json(payment);
   } catch (error) {
+    console.error('Error updating payment:', error);
     res.status(400).json({ message: error.message });
   }
 };
