@@ -3,6 +3,9 @@ import { PaymentService } from '../services/api';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import PaymentForm from './PaymentForm';
+import PaymentFilters from './PaymentFilters';
+import PDFViewerModal from './PDFViewerModal';
+import { generatePaymentReport, generateWhatsAppMessage, openWhatsApp } from '../utils/pdfGenerator';
 import {
   Box,
   Button,
@@ -140,6 +143,10 @@ const PaymentList = () => {
   };
 
   const [monthlyPayments, setMonthlyPayments] = useState([]);
+  const [filteredPayments, setFilteredPayments] = useState([]);
+  const [activeFilters, setActiveFilters] = useState({});
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [currentPdfDoc, setCurrentPdfDoc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -152,15 +159,114 @@ const PaymentList = () => {
     loadPayments();
   }, []);
 
+  // Update filtered payments when monthlyPayments changes
+  useEffect(() => {
+    if (Object.keys(activeFilters).length === 0) {
+      setFilteredPayments(monthlyPayments);
+    } else {
+      // Re-apply current filters when data changes
+      const filteredMonthlyData = monthlyPayments.map(monthData => {
+        const filteredPayments = monthData.payments.filter(payment => {
+          if (!payment.data) return false;
+          
+          const paymentDate = new Date(payment.data);
+          const paymentDateString = format(paymentDate, 'yyyy-MM-dd');
+          
+          if (activeFilters.date) {
+            return paymentDateString === activeFilters.date;
+          }
+          
+          if (activeFilters.startDate && activeFilters.endDate) {
+            return paymentDateString >= activeFilters.startDate && paymentDateString <= activeFilters.endDate;
+          }
+          
+          return true;
+        });
+        
+        const newTotal = filteredPayments.reduce((sum, payment) => sum + (payment.valor || 0), 0);
+        
+        return {
+          ...monthData,
+          payments: filteredPayments,
+          total: newTotal
+        };
+      }).filter(monthData => monthData.payments.length > 0);
+      
+      setFilteredPayments(filteredMonthlyData);
+    }
+  }, [monthlyPayments, activeFilters]);
+
   const loadPayments = async () => {
     try {
       const data = await PaymentService.list();
       setMonthlyPayments(data);
+      setFilteredPayments(data); // Initialize filtered payments
       setLoading(false);
     } catch (err) {
       setError('Erro ao carregar pagamentos');
       setLoading(false);
     }
+  };
+
+  const handleFilterChange = (filters) => {
+    setActiveFilters(filters);
+    
+    if (Object.keys(filters).length === 0) {
+      // No filters, show all payments
+      setFilteredPayments(monthlyPayments);
+      return;
+    }
+    
+    // Filter the grouped monthly data
+    const filteredMonthlyData = monthlyPayments.map(monthData => {
+      const filteredPayments = monthData.payments.filter(payment => {
+        // Convert payment.data to YYYY-MM-DD format for comparison
+        if (!payment.data) {
+          return false;
+        }
+        
+        const paymentDate = new Date(payment.data);
+        const paymentDateString = format(paymentDate, 'yyyy-MM-dd');
+        
+        // Filter by specific date
+        if (filters.date) {
+          return paymentDateString === filters.date;
+        }
+        
+        // Filter by date range (month, year, or custom period)
+        if (filters.startDate && filters.endDate) {
+          return paymentDateString >= filters.startDate && paymentDateString <= filters.endDate;
+        }
+        
+        return true;
+      });
+      
+      // Calculate new total for filtered payments
+      const newTotal = filteredPayments.reduce((sum, payment) => sum + (payment.valor || 0), 0);
+      
+      return {
+        ...monthData,
+        payments: filteredPayments,
+        total: newTotal
+      };
+    }).filter(monthData => monthData.payments.length > 0); // Remove months with no payments
+    
+    setFilteredPayments(filteredMonthlyData);
+  };
+
+  const handleGeneratePDF = () => {
+    // Flatten the grouped data for PDF generation
+    const flattenedPayments = filteredPayments.flatMap(monthData => monthData.payments);
+    const doc = generatePaymentReport(flattenedPayments, activeFilters);
+    setCurrentPdfDoc(doc);
+    setPdfModalOpen(true);
+  };
+
+  const handleSendWhatsApp = () => {
+    // Flatten the grouped data for WhatsApp message
+    const flattenedPayments = filteredPayments.flatMap(monthData => monthData.payments);
+    const message = generateWhatsAppMessage(flattenedPayments, activeFilters);
+    openWhatsApp(message);
   };
 
   const handleEdit = (payment) => {
@@ -282,11 +388,11 @@ const PaymentList = () => {
   const renderMonthlyPayments = () => {
     if (loading) return <Typography>Carregando...</Typography>;
     if (error) return <Typography color="error">{error}</Typography>;
-    if (!monthlyPayments || monthlyPayments.length === 0) {
+    if (!filteredPayments || filteredPayments.length === 0) {
       return <Typography>Nenhum pagamento encontrado.</Typography>;
     }
 
-    return monthlyPayments.map(({ month, payments, total }) => {
+    return filteredPayments.map(({ month, payments, total }) => {
       // Parse the ISO date string from the backend using date-fns parseISO
       const date = parseISO(month);
       
@@ -655,6 +761,15 @@ const PaymentList = () => {
         </Button>
       </Box>
 
+      {/* Payment Filters */}
+      <PaymentFilters
+        onFilterChange={handleFilterChange}
+        onGeneratePDF={handleGeneratePDF}
+        onSendWhatsApp={handleSendWhatsApp}
+        totalFiltered={filteredPayments.flatMap(monthData => monthData.payments).length}
+        totalValue={filteredPayments.reduce((total, monthData) => total + (monthData.total || 0), 0)}
+      />
+
       <Box sx={{ width: '100%' }}>
         <Card sx={{ 
           mb: 3, 
@@ -782,6 +897,16 @@ const PaymentList = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* PDF Viewer Modal */}
+      <PDFViewerModal
+        open={pdfModalOpen}
+        onClose={() => setPdfModalOpen(false)}
+        pdfDoc={currentPdfDoc}
+        filename={`relatorio-faxina-${format(new Date(), 'yyyy-MM-dd')}.pdf`}
+        onWhatsAppShare={handleSendWhatsApp}
+      />
+
     </Container>
   );
 };
