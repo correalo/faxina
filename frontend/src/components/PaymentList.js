@@ -745,31 +745,7 @@ const PaymentList = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
-        <Button
-          variant="contained"
-          onClick={() => setShowForm(true)}
-          sx={{
-            backgroundColor: '#27ae60',
-            '&:hover': {
-              backgroundColor: '#219a52'
-            },
-            borderRadius: 2
-          }}
-        >
-          + Novo Pagamento
-        </Button>
-      </Box>
-
-      {/* Payment Filters */}
-      <PaymentFilters
-        onFilterChange={handleFilterChange}
-        onGeneratePDF={handleGeneratePDF}
-        onSendWhatsApp={handleSendWhatsApp}
-        totalFiltered={filteredPayments.flatMap(monthData => monthData.payments).length}
-        totalValue={filteredPayments.reduce((total, monthData) => total + (monthData.total || 0), 0)}
-      />
-
+      {/* User Info Card - Maria de Lourdes */}
       <Box sx={{ width: '100%' }}>
         <Card sx={{ 
           mb: 3, 
@@ -870,6 +846,16 @@ const PaymentList = () => {
           </CardContent>
         </Card>
       </Box>
+
+      {/* Payment Filters */}
+      <PaymentFilters
+        onFilterChange={handleFilterChange}
+        onGeneratePDF={handleGeneratePDF}
+        onSendWhatsApp={handleSendWhatsApp}
+        onNewPayment={() => setShowForm(true)}
+        totalFiltered={filteredPayments.flatMap(monthData => monthData.payments).length}
+        totalValue={filteredPayments.reduce((total, monthData) => total + (monthData.total || 0), 0)}
+      />
 
       {renderMonthlyPayments()}
       

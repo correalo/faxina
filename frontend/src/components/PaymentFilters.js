@@ -26,7 +26,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ptBR } from 'date-fns/locale';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 
-const PaymentFilters = ({ onFilterChange, onGeneratePDF, onSendWhatsApp, totalFiltered, totalValue }) => {
+const PaymentFilters = ({ onFilterChange, onGeneratePDF, onSendWhatsApp, onNewPayment, totalFiltered, totalValue }) => {
   const [filterType, setFilterType] = useState('all');
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -264,8 +264,21 @@ const PaymentFilters = ({ onFilterChange, onGeneratePDF, onSendWhatsApp, totalFi
                     <strong>Valor Total:</strong> {formatCurrency(totalValue || 0)}
                   </Typography>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Stack direction="row" spacing={1} justifyContent="flex-end">
+                <Grid xs={12} sm={6}>
+                  <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                    <Button
+                      variant="contained"
+                      onClick={onNewPayment}
+                      size="small"
+                      sx={{
+                        backgroundColor: '#27ae60',
+                        '&:hover': {
+                          backgroundColor: '#219a52'
+                        }
+                      }}
+                    >
+                      + Novo Pagamento
+                    </Button>
                     <Button
                       variant="contained"
                       color="error"

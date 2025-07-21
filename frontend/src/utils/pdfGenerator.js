@@ -58,8 +58,8 @@ export const generatePaymentReport = (payments, filters = {}) => {
   doc.setFillColor(52, 73, 94);
   doc.rect(margin, yPosition, pageWidth - 2 * margin, 8, 'F');
   
-  const headers = ['#', 'Cliente', 'Endereço', 'Data', 'Valor', 'Realizada', 'Paga'];
-  const colWidths = [15, 35, 40, 25, 25, 20, 20];
+  const headers = ['#', 'Data', 'Valor', 'Realizada', 'Paga', 'Data Pagamento'];
+  const colWidths = [15, 30, 30, 25, 25, 35];
   let xPosition = margin + 2;
   
   headers.forEach((header, index) => {
@@ -89,12 +89,11 @@ export const generatePaymentReport = (payments, filters = {}) => {
     xPosition = margin + 2;
     const rowData = [
       (index + 1).toString(),
-      (payment.cliente || 'N/A').substring(0, 15),
-      (payment.endereco || 'N/A').substring(0, 20),
       payment.data ? format(new Date(payment.data), 'dd/MM/yyyy') : 'N/A',
       formatCurrency(payment.valor || 0),
       payment.realizada ? 'Sim' : 'Não',
-      payment.paga === 'PAGA' ? 'Sim' : 'Não'
+      payment.paga === 'PAGA' ? 'Sim' : 'Não',
+      payment.dataPagamento ? format(new Date(payment.dataPagamento), 'dd/MM/yyyy') : 'N/A'
     ];
     
     rowData.forEach((data, colIndex) => {

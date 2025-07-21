@@ -13,7 +13,7 @@ import {
   useTheme,
   useMediaQuery
 } from '@mui/material';
-import { Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
+import { Save as SaveIcon, Cancel as CancelIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 
 const PaymentForm = ({ payment, onClose, onSave }) => {
   const theme = useTheme();
@@ -134,11 +134,11 @@ const PaymentForm = ({ payment, onClose, onSave }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Format valor for backend (send in centavos - multiply by 100)
+      // Format valor for backend (send in reais directly)
       const submitData = {
         dataString: formData.data, // Use dataString field to avoid timezone issues
         data: formData.data, // Keep for compatibility
-        valor: formData.valor ? Math.round(parseFloat(formData.valor.replace(',', '.')) * 100) : 0,
+        valor: formData.valor ? parseFloat(formData.valor.replace(',', '.')) : 0,
         // Campos opcionais com lógica pragmática
         realizada: formData.realizada !== undefined ? formData.realizada : false,
         paga: formData.paga ? 'PAGA' : '', // Corrigido: só define 'PAGA' se realmente marcado
@@ -309,17 +309,48 @@ const PaymentForm = ({ payment, onClose, onSave }) => {
             sx={{ mb: isMobile ? 2 : 3 }}
           />
 
-          <Box display="flex" gap={isMobile ? 1 : 2} justifyContent="flex-end" flexDirection={isMobile ? 'column' : 'row'} width="100%">
+          <Box display="flex" gap={isMobile ? 1 : 2} justifyContent="center" flexDirection={isMobile ? 'column' : 'row'} width="100%">
+            {/* Back to List Button */}
             <Button
-              variant="outlined"
-              color="error"
+              variant="contained"
+              onClick={onClose}
+              startIcon={<ArrowBackIcon />}
+              fullWidth={isMobile}
+              size={isMobile ? 'small' : 'medium'}
+              sx={{
+                backgroundColor: '#3498db',
+                color: '#ffffff',
+                '&:hover': {
+                  backgroundColor: '#2980b9'
+                },
+                flex: isMobile ? 'none' : 1,
+                minWidth: isMobile ? 'auto' : '150px'
+              }}
+            >
+              Voltar à Lista
+            </Button>
+            
+            {/* Cancel Button */}
+            <Button
+              variant="contained"
               onClick={onClose}
               startIcon={<CancelIcon />}
               fullWidth={isMobile}
               size={isMobile ? 'small' : 'medium'}
+              sx={{
+                backgroundColor: '#e74c3c',
+                color: '#ffffff',
+                '&:hover': {
+                  backgroundColor: '#c0392b'
+                },
+                flex: isMobile ? 'none' : 1,
+                minWidth: isMobile ? 'auto' : '150px'
+              }}
             >
               Cancelar
             </Button>
+            
+            {/* Save Button */}
             <Button
               type="submit"
               variant="contained"
@@ -327,6 +358,10 @@ const PaymentForm = ({ payment, onClose, onSave }) => {
               startIcon={<SaveIcon />}
               fullWidth={isMobile}
               size={isMobile ? 'small' : 'medium'}
+              sx={{
+                flex: isMobile ? 'none' : 1,
+                minWidth: isMobile ? 'auto' : '150px'
+              }}
             >
               {payment?.id ? 'Atualizar Pagamento' : 'Salvar Pagamento'}
             </Button>
