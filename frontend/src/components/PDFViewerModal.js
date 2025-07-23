@@ -13,36 +13,45 @@ import {
   Close as CloseIcon,
   Print as PrintIcon,
   WhatsApp as WhatsAppIcon,
-  Download as DownloadIcon
+  Download as DownloadIcon,
+  Save as SaveIcon
 } from '@mui/icons-material';
 
 const PDFViewerModal = ({ 
   open, 
   onClose, 
-  pdfDoc, 
+  pdfUrl, 
+  pdfDoc,
   filename = 'relatorio-faxina.pdf',
-  onWhatsAppShare 
+  onWhatsAppShare,
+  onSavePdf
 }) => {
   const [pdfDataUrl, setPdfDataUrl] = useState('');
 
   useEffect(() => {
-    if (pdfDoc && open) {
-      try {
-        const pdfBlob = pdfDoc.output('blob');
-        const url = URL.createObjectURL(pdfBlob);
-        setPdfDataUrl(url);
-        
-        return () => {
-          URL.revokeObjectURL(url);
-        };
-      } catch (error) {
-        console.error('Error creating PDF URL:', error);
+    if (open) {
+      if (pdfDoc) {
+        // Se tiver um objeto PDF, converter para URL de dados
+        try {
+          const dataUrl = pdfDoc.output('dataurlstring');
+          setPdfDataUrl(dataUrl);
+        } catch (error) {
+          console.error('Erro ao converter PDF para URL de dados:', error);
+          setPdfDataUrl('');
+        }
+      } else if (pdfUrl) {
+        // Se tiver uma URL de PDF, usar diretamente
+        setPdfDataUrl(pdfUrl);
+      } else {
+        setPdfDataUrl('');
       }
+    } else {
+      setPdfDataUrl('');
     }
-  }, [pdfDoc, open]);
+  }, [pdfDoc, pdfUrl, open]);
 
   const handlePrint = () => {
-    if (pdfDoc) {
+    if (pdfDataUrl) {
       try {
         const printWindow = window.open('', '_blank');
         if (printWindow) {
@@ -70,9 +79,15 @@ const PDFViewerModal = ({
   };
 
   const handleDownload = () => {
-    if (pdfDoc) {
+    if (pdfDataUrl) {
       try {
-        pdfDoc.save(filename);
+        // Criar um link para download da URL
+        const link = document.createElement('a');
+        link.href = pdfDataUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       } catch (error) {
         console.error('Error downloading PDF:', error);
       }
@@ -114,6 +129,10 @@ const PDFViewerModal = ({
             
             <IconButton size="small" onClick={handleDownload}>
               <DownloadIcon />
+            </IconButton>
+            
+            <IconButton size="small" onClick={onSavePdf} color="primary">
+              <SaveIcon />
             </IconButton>
             
             <IconButton size="small" onClick={handleClose}>
@@ -171,6 +190,16 @@ const PDFViewerModal = ({
             size="small"
           >
             WhatsApp
+          </Button>
+          
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<SaveIcon />}
+            onClick={onSavePdf}
+            size="small"
+          >
+            Salvar esse relatório
           </Button>
           
           <Button
