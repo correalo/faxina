@@ -14,7 +14,7 @@ function App() {
           <AppBar position="static">
             <Toolbar>
               <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                Sistema de Faxinas
+                Faxinas Consultório
               </Typography>
             </Toolbar>
           </AppBar>

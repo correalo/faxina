@@ -296,21 +296,22 @@ const PaymentFilters = ({ onFilterChange, onSendWhatsApp, onNewPayment, totalFil
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                  <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: 'nowrap', overflowX: 'auto' }}>
                     <Button
                       variant="contained"
                       onClick={onNewPayment}
-                      size="small"
                       sx={{
                         backgroundColor: '#27ae60',
                         '&:hover': {
                           backgroundColor: '#219a52'
-                        }
+                        },
+                        fontSize: { xs: '0.65rem', sm: '0.9rem', md: '1rem' },
+                        padding: { xs: '2px 6px', sm: '8px 16px', md: '10px 22px' },
+                        height: { xs: '30px', sm: '40px', md: '45px' }
                       }}
                     >
                       + Novo Pagamento
                     </Button>
-
 
 
                     <Button
@@ -318,15 +319,32 @@ const PaymentFilters = ({ onFilterChange, onSendWhatsApp, onNewPayment, totalFil
                       startIcon={<PdfIcon />}
                       onClick={handleOpenReport}
                       disabled={totalFiltered === 0}
-                      size="small"
                       sx={{
                         backgroundColor: '#d32f2f',
                         '&:hover': {
                           backgroundColor: '#b71c1c'
-                        }
+                        },
+                        mr: 1,
+                        fontSize: { xs: '0.65rem', sm: '0.9rem', md: '1rem' },
+                        padding: { xs: '2px 6px', sm: '8px 16px', md: '10px 22px' },
+                        height: { xs: '30px', sm: '40px', md: '45px' }
                       }}
                     >
                       Visualizar PDF
+                    </Button>
+                    <Button
+                      variant="contained"
+                      sx={{
+                        backgroundColor: '#1a237e',
+                        '&:hover': {
+                          backgroundColor: '#b71c1c'
+                        },
+                        fontSize: { xs: '0.65rem', sm: '0.9rem', md: '1rem' },
+                        padding: { xs: '2px 6px', sm: '8px 16px', md: '10px 22px' },
+                        height: { xs: '30px', sm: '40px', md: '45px' }
+                      }}
+                    >
+                      Visualizar Relatórios
                     </Button>
                     
                   </Stack>

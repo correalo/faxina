@@ -265,10 +265,10 @@ const PaymentReport = ({ open, onClose, payments, totalValue, title }) => {
               <Box sx={{ 
                 display: 'grid', 
                 gridTemplateColumns: '1fr 1fr 1fr', 
-                width: { xs: '90%', sm: '80%', md: '70%' },
+                width: { xs: '95%', sm: '90%', md: '85%' },
                 maxWidth: '400px',
                 border: '1px solid rgba(224, 224, 224, 1)',
-                mx: 'auto',
+                mx: { xs: 1, sm: 2, md: 'auto' },
                 borderRadius: 1,
                 overflow: 'hidden'
               }}>
