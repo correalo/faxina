@@ -1,14 +1,14 @@
 import React from 'react';
 import { format } from 'date-fns';
+import { Dialog, DialogContent, DialogTitle } from '@mui/material';
+import { Typography, Box, Paper, Toolbar, Stack, Tooltip } from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
+import PrintIcon from '@mui/icons-material/Print';
+import DownloadIcon from '@mui/icons-material/GetApp';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { Close as CloseIcon, Print as PrintIcon, GetApp as DownloadIcon, WhatsApp as WhatsAppIcon } from '@mui/icons-material';
-import { 
-  Dialog, DialogTitle, DialogContent,
-  Typography, Box, Paper, IconButton, Tooltip,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableFooter,
-  Toolbar, Stack
-} from '@mui/material';
 
 // Estilos CSS para controlar o que aparece na impressão
 const printStyles = `
@@ -216,7 +216,7 @@ const PaymentReport = ({ open, onClose, payments, totalValue, title }) => {
           overflow: 'auto',
           display: 'flex',
           justifyContent: 'center',
-          alignItems: 'flex-start',
+          alignItems: 'center', // Centraliza verticalmente também
           p: { xs: 1, sm: 2 }, // Padding menor em telas pequenas
           bgcolor: '#f5f5f5'
         }}>
@@ -227,120 +227,145 @@ const PaymentReport = ({ open, onClose, payments, totalValue, title }) => {
               overflow: 'hidden',
               width: '100%',
               height: 'auto',
-              maxWidth: { xs: '100%', sm: '100%', md: '210mm' }, // Responsivo em telas pequenas
+              maxWidth: { xs: '98%', sm: '90%', md: '210mm' }, // Mais centralizado em telas pequenas
+              mx: 'auto', // Centraliza horizontalmente
               bgcolor: 'white',
-              p: { xs: 1, sm: 2, md: 3 } // Padding responsivo
+              p: { xs: 0.5, sm: 2, md: 3 } // Padding menor em telas pequenas
             }}
           >
             <Typography 
               variant="h5" 
               align="center" 
               gutterBottom
-              sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.75rem' } }}
+              sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem', md: '1.75rem' }, fontWeight: 'bold' }}
             >
               {title || 'Relatório de Pagamentos'}
             </Typography>
             
             <Typography 
               variant="body2" 
+              align="center"
               gutterBottom
-              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+              sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
             >
               Total de pagamentos: {payments?.length || 0}
             </Typography>
             
             <Typography 
               variant="body2" 
+              align="center"
               gutterBottom 
               mb={{ xs: 1, sm: 2, md: 3 }}
-              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+              sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, fontWeight: 'bold' }}
             >
               Valor total: {formatCurrency(totalValue || 0)}
             </Typography>
             
-            <TableContainer component={Paper} elevation={0} sx={{ overflowX: 'auto' }}>
-              <Table size="small" sx={{ minWidth: { xs: '100%', sm: '400px' } }}>
-                <TableHead>
-                  <TableRow style={{ backgroundColor: '#1a237e' }}>
-                    <TableCell 
-                      style={{ color: 'white', fontWeight: 'bold', backgroundColor: '#1a237e' }}
-                      sx={{ 
-                        padding: { xs: '6px 8px', sm: '8px 16px' },
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                      }}
-                    >Data</TableCell>
-                    <TableCell 
-                      style={{ color: 'white', fontWeight: 'bold', backgroundColor: '#1a237e' }}
-                      sx={{ 
-                        padding: { xs: '6px 8px', sm: '8px 16px' },
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                      }}
-                    >Valor</TableCell>
-                    <TableCell 
-                      style={{ color: 'white', fontWeight: 'bold', backgroundColor: '#1a237e' }}
-                      sx={{ 
-                        padding: { xs: '6px 8px', sm: '8px 16px' },
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                      }}
-                    >Data do Pagamento</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {payments && payments.map((payment, index) => (
-                    <TableRow key={payment._id || index} sx={{ bgcolor: index % 2 === 0 ? '#f5f5f5' : 'white' }}>
-                      <TableCell sx={{ 
-                        padding: { xs: '6px 8px', sm: '8px 16px' },
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                      }}>
-                        {format(new Date(payment.data), 'dd/MM/yyyy')}
-                      </TableCell>
-                      <TableCell sx={{ 
-                        padding: { xs: '6px 8px', sm: '8px 16px' },
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                      }}>
-                        {formatCurrency(payment.valor)}
-                      </TableCell>
-                      <TableCell sx={{ 
-                        padding: { xs: '6px 8px', sm: '8px 16px' },
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                      }}>
-                        {payment.dataPagamento ? format(new Date(payment.dataPagamento), 'dd/MM/yyyy') : '-'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-                <TableFooter>
-                  <TableRow style={{ backgroundColor: '#1a237e', fontWeight: 'bold' }}>
-                    <TableCell 
-                      style={{ fontWeight: 'bold', color: 'white', backgroundColor: '#1a237e' }}
-                      sx={{ 
-                        padding: { xs: '6px 8px', sm: '8px 16px' },
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                      }}
-                    >
-                      TOTAL ({numeroFaxinas} faxinas)
-                    </TableCell>
-                    <TableCell 
-                      style={{ fontWeight: 'bold', color: 'white', backgroundColor: '#1a237e' }}
-                      sx={{ 
-                        padding: { xs: '6px 8px', sm: '8px 16px' },
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                      }}
-                    >
-                      {formatCurrency(totalValue || 0)}
-                    </TableCell>
-                    <TableCell 
-                      style={{ color: 'white', backgroundColor: '#1a237e' }}
-                      sx={{ 
-                        padding: { xs: '6px 8px', sm: '8px 16px' },
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                      }}
-                    >
-                    </TableCell>
-                  </TableRow>
-                </TableFooter>
-              </Table>
-            </TableContainer>
+            <Box sx={{ width: '100%', overflowX: 'auto', display: 'flex', justifyContent: 'center' }}>
+              <Box sx={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr 1fr', 
+                width: { xs: '90%', sm: '80%', md: '70%' },
+                maxWidth: '400px',
+                border: '1px solid rgba(224, 224, 224, 1)',
+                mx: 'auto',
+                borderRadius: 1,
+                overflow: 'hidden'
+              }}>
+                {/* Header */}
+                <Box sx={{ 
+                  backgroundColor: '#1a237e', 
+                  color: 'white', 
+                  fontWeight: 'bold',
+                  padding: { xs: '4px 4px', sm: '8px 16px' },
+                  fontSize: { xs: '0.65rem', sm: '0.875rem' },
+                  whiteSpace: 'nowrap',
+                  borderRight: '1px solid rgba(224, 224, 224, 0.4)'
+                }}>
+                  DATA
+                </Box>
+                <Box sx={{ 
+                  backgroundColor: '#1a237e', 
+                  color: 'white', 
+                  fontWeight: 'bold',
+                  padding: { xs: '4px 4px', sm: '8px 16px' },
+                  fontSize: { xs: '0.65rem', sm: '0.875rem' },
+                  whiteSpace: 'nowrap',
+                  borderRight: '1px solid rgba(224, 224, 224, 0.4)'
+                }}>
+                  VALOR
+                </Box>
+                <Box sx={{ 
+                  backgroundColor: '#1a237e', 
+                  color: 'white', 
+                  fontWeight: 'bold',
+                  padding: { xs: '4px 4px', sm: '8px 16px' },
+                  fontSize: { xs: '0.65rem', sm: '0.875rem' },
+                  whiteSpace: 'nowrap'
+                }}>
+                  DATA PGTO
+                </Box>
+                
+                {/* Rows */}
+                {payments && payments.map((payment, index) => (
+                  <React.Fragment key={payment._id || index}>
+                    <Box sx={{ 
+                      padding: { xs: '4px 4px', sm: '8px 16px' },
+                      fontSize: { xs: '0.65rem', sm: '0.875rem' },
+                      whiteSpace: 'nowrap',
+                      backgroundColor: index % 2 === 0 ? '#f5f5f5' : 'white',
+                      borderRight: '1px solid rgba(224, 224, 224, 1)',
+                      borderBottom: '1px solid rgba(224, 224, 224, 1)'
+                    }}>
+                      {format(new Date(payment.data), 'dd/MM/yyyy')}
+                    </Box>
+                    <Box sx={{ 
+                      padding: { xs: '4px 4px', sm: '8px 16px' },
+                      fontSize: { xs: '0.65rem', sm: '0.875rem' },
+                      whiteSpace: 'nowrap',
+                      backgroundColor: index % 2 === 0 ? '#f5f5f5' : 'white',
+                      borderRight: '1px solid rgba(224, 224, 224, 1)',
+                      borderBottom: '1px solid rgba(224, 224, 224, 1)'
+                    }}>
+                      {formatCurrency(payment.valor)}
+                    </Box>
+                    <Box sx={{ 
+                      padding: { xs: '4px 4px', sm: '8px 16px' },
+                      fontSize: { xs: '0.65rem', sm: '0.875rem' },
+                      whiteSpace: 'nowrap',
+                      backgroundColor: index % 2 === 0 ? '#f5f5f5' : 'white',
+                      borderBottom: '1px solid rgba(224, 224, 224, 1)'
+                    }}>
+                      {payment.dataPagamento ? format(new Date(payment.dataPagamento), 'dd/MM/yyyy') : '-'}
+                    </Box>
+                  </React.Fragment>
+                ))}
+                
+                {/* Footer */}
+                <Box sx={{ 
+                  backgroundColor: '#1a237e', 
+                  color: 'white', 
+                  fontWeight: 'bold',
+                  padding: { xs: '4px 4px', sm: '8px 16px' },
+                  fontSize: { xs: '0.65rem', sm: '0.875rem' },
+                  whiteSpace: 'nowrap',
+                  borderRight: '1px solid rgba(224, 224, 224, 0.4)'
+                }}>
+                  TOTAL ({numeroFaxinas})
+                </Box>
+                <Box sx={{ 
+                  backgroundColor: '#1a237e', 
+                  color: 'white', 
+                  fontWeight: 'bold',
+                  padding: { xs: '4px 4px', sm: '8px 16px' },
+                  fontSize: { xs: '0.65rem', sm: '0.875rem' },
+                  whiteSpace: 'nowrap',
+                  gridColumn: '2 / 4'
+                }}>
+                  {formatCurrency(totalValue || 0)}
+                </Box>
+              </Box>
+            </Box>
           </Paper>
         </Box>
       </DialogContent>
