@@ -307,7 +307,7 @@ const PaymentFilters = ({ onFilterChange, onSendWhatsApp, onNewPayment, totalFil
                         },
                         fontSize: { xs: '0.65rem', sm: '0.9rem', md: '1rem' },
                         padding: { xs: '2px 6px', sm: '8px 16px', md: '10px 22px' },
-                        height: { xs: '30px', sm: '40px', md: '45px' }
+                        height: { xs: '36px', sm: '40px', md: '45px' }
                       }}
                     >
                       + Novo Pagamento
@@ -327,7 +327,7 @@ const PaymentFilters = ({ onFilterChange, onSendWhatsApp, onNewPayment, totalFil
                         mr: 1,
                         fontSize: { xs: '0.65rem', sm: '0.9rem', md: '1rem' },
                         padding: { xs: '2px 6px', sm: '8px 16px', md: '10px 22px' },
-                        height: { xs: '30px', sm: '40px', md: '45px' }
+                        height: { xs: '36px', sm: '40px', md: '45px' }
                       }}
                     >
                       Visualizar PDF
@@ -341,7 +341,7 @@ const PaymentFilters = ({ onFilterChange, onSendWhatsApp, onNewPayment, totalFil
                         },
                         fontSize: { xs: '0.65rem', sm: '0.9rem', md: '1rem' },
                         padding: { xs: '2px 6px', sm: '8px 16px', md: '10px 22px' },
-                        height: { xs: '30px', sm: '40px', md: '45px' }
+                        height: { xs: '36px', sm: '40px', md: '45px' }
                       }}
                     >
                       Visualizar Relatórios
