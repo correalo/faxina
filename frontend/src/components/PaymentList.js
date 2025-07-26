@@ -4,8 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import PaymentForm from './PaymentForm';
 import PaymentFilters from './PaymentFilters';
-import PDFViewerModal from './PDFViewerModal';
-import { generatePaymentReport, generateWhatsAppMessage, openWhatsApp } from '../utils/pdfGenerator';
+import { generateWhatsAppMessage, openWhatsApp } from '../utils/whatsAppUtils';
 import {
   Box,
   Button,
@@ -145,8 +144,7 @@ const PaymentList = () => {
   const [monthlyPayments, setMonthlyPayments] = useState([]);
   const [filteredPayments, setFilteredPayments] = useState([]);
   const [activeFilters, setActiveFilters] = useState({});
-  const [pdfModalOpen, setPdfModalOpen] = useState(false);
-  const [currentPdfDoc, setCurrentPdfDoc] = useState(null);
+  // Estados para gerenciamento de pagamentos
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -249,21 +247,12 @@ const PaymentList = () => {
         payments: filteredPayments,
         total: newTotal
       };
-    }).filter(monthData => monthData.payments.length > 0); // Remove months with no payments
+    }).filter(monthData => monthData.payments.length > 0); 
     
     setFilteredPayments(filteredMonthlyData);
   };
 
-  const handleGeneratePDF = () => {
-    // Flatten the grouped data for PDF generation
-    const flattenedPayments = filteredPayments.flatMap(monthData => monthData.payments);
-    const doc = generatePaymentReport(flattenedPayments, activeFilters);
-    setCurrentPdfDoc(doc);
-    setPdfModalOpen(true);
-  };
-
   const handleSendWhatsApp = () => {
-    // Flatten the grouped data for WhatsApp message
     const flattenedPayments = filteredPayments.flatMap(monthData => monthData.payments);
     const message = generateWhatsAppMessage(flattenedPayments, activeFilters);
     openWhatsApp(message);
@@ -333,26 +322,23 @@ const PaymentList = () => {
       await loadPayments();
     } catch (err) {
       setError('Erro ao atualizar data de pagamento');
-      throw err; // Re-throw para que o InlineDateEditor possa tratar
+      throw err; 
     }
   };
 
   const formatDate = (dateString, payment = null) => {
     if (!dateString) return '-';
     
-    // If payment object is provided and has dataString, use it to avoid timezone issues
     if (payment && payment.dataString) {
       const [year, month, day] = payment.dataString.split('-');
       return `${day}/${month}/${year}`;
     }
     
-    // If dateString is in YYYY-MM-DD format, parse it directly
     if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
       const [year, month, day] = dateString.split('-');
       return `${day}/${month}/${year}`;
     }
     
-    // Fallback to original method for other formats
     return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
   };
 
@@ -393,7 +379,6 @@ const PaymentList = () => {
     }
 
     return filteredPayments.map(({ month, payments, total }) => {
-      // Parse the ISO date string from the backend using date-fns parseISO
       const date = parseISO(month);
       
       return (
@@ -405,10 +390,11 @@ const PaymentList = () => {
           </Box>
 
           {isMobile ? (
-            // Mobile Card Layout
             <Box sx={{ width: '100%' }}>
               {payments.map((payment) => (
-                  <Card sx={{ 
+                <Card 
+                  key={payment._id}
+                  sx={{ 
                     backgroundColor: '#fff', 
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                     borderRadius: 0,
@@ -424,211 +410,206 @@ const PaymentList = () => {
                     },
                     mb: 0
                   }}>
-                    <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                        {/* Data e Valor */}
-                        <Box sx={{ 
-                          display: 'flex', 
-                          justifyContent: 'space-between', 
-                          alignItems: 'flex-start',
-                          pb: 1,
-                          borderBottom: '1px solid rgba(0,0,0,0.08)'
-                        }}>
-                          <Box>
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
-                                color: '#7f8c8d', 
-                                fontSize: '0.75rem',
-                                fontWeight: 500,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px',
-                                mb: 0.5
-                              }}
-                            >
-                              Data
-                            </Typography>
-                            <Typography 
-                              variant="h6" 
-                              sx={{ 
-                                fontWeight: 600, 
-                                color: '#2c3e50',
-                                fontSize: '1.1rem'
-                              }}
-                            >
-                              {formatDate(payment.data, payment)}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ textAlign: 'right' }}>
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
-                                color: '#7f8c8d', 
-                                fontSize: '0.75rem',
-                                fontWeight: 500,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px',
-                                mb: 0.5
-                              }}
-                            >
-                              Valor
-                            </Typography>
-                            <Typography 
-                              variant="h5" 
-                              sx={{ 
-                                fontWeight: 700, 
-                                color: '#27ae60',
-                                fontSize: '1.4rem'
-                              }}
-                            >
-                              {formatCurrency(payment.valor)}
-                            </Typography>
-                          </Box>
-                        </Box>
-                        
-                        {/* Status */}
-                        <Box sx={{ 
-                          display: 'flex', 
-                          flexDirection: 'row', 
-                          gap: { xs: 2, sm: 3, md: 4 }, 
-                          flexWrap: 'wrap',
-                          justifyContent: { xs: 'center', sm: 'space-around' },
-                          px: { xs: 1, sm: 2, md: 3 }
-                        }}>
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                checked={payment.realizada}
-                                onChange={() => handleStatusToggle(payment, 'realizada')}
-                                sx={{
-                                  color: '#bdc3c7',
-                                  '&.Mui-checked': {
-                                    color: '#27ae60'
-                                  },
-                                  '& .MuiSvgIcon-root': {
-                                    fontSize: '1.3rem'
-                                  }
-                                }}
-                              />
-                            }
-                            label={
-                              <Typography sx={{ 
-                                fontSize: '0.875rem',
-                                fontWeight: 500,
-                                color: payment.realizada ? '#27ae60' : '#7f8c8d'
-                              }}>
-                                REALIZADA
-                              </Typography>
-                            }
-                          />
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                checked={payment.paga === 'PAGA'}
-                                onChange={() => handleStatusToggle(payment, 'paga')}
-                                sx={{
-                                  color: '#bdc3c7',
-                                  '&.Mui-checked': {
-                                    color: '#27ae60'
-                                  },
-                                  '& .MuiSvgIcon-root': {
-                                    fontSize: '1.3rem'
-                                  }
-                                }}
-                              />
-                            }
-                            label={
-                              <Typography sx={{ 
-                                fontSize: '0.875rem',
-                                fontWeight: 500,
-                                color: payment.paga === 'PAGA' ? '#27ae60' : '#7f8c8d'
-                              }}>
-                                PAGA
-                              </Typography>
-                            }
-                          />
-                        </Box>
-                        
-                        {/* Data Pagamento */}
-                        {payment.dataPagamento && (
-                          <Box sx={{ 
-                            backgroundColor: 'rgba(39, 174, 96, 0.08)',
-                            borderRadius: 2,
-                            p: 1.5,
-                            textAlign: 'center'
-                          }}>
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
-                                color: '#27ae60',
-                                fontWeight: 500,
-                                fontSize: '0.875rem'
-                              }}
-                            >
-                              💰 Pago em: {formatDate(payment.dataPagamento)}
-                            </Typography>
-                          </Box>
-                        )}
-                        
-                        {/* Ações */}
-                        <Box sx={{ 
-                          display: 'flex', 
-                          gap: { xs: 2, sm: 3, md: 4 }, 
-                          justifyContent: { xs: 'center', sm: 'space-around' },
-                          pt: 1,
-                          px: { xs: 2, sm: 3, md: 4 }
-                        }}>
-                          <Button
-                            variant="contained"
-                            size="medium"
-                            onClick={() => handleEdit(payment)}
-                            sx={{
-                              backgroundColor: '#3498db',
-                              '&:hover': {
-                                backgroundColor: '#2980b9'
-                              },
-                              borderRadius: 2,
-                              px: 3,
-                              py: 1,
-                              fontWeight: 600,
-                              textTransform: 'none',
-                              fontSize: '0.875rem'
+                  <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'flex-start',
+                        pb: 1,
+                        borderBottom: '1px solid rgba(0,0,0,0.08)'
+                      }}>
+                        <Box>
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              color: '#7f8c8d', 
+                              fontSize: '0.75rem',
+                              fontWeight: 500,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                              mb: 0.5
                             }}
                           >
-                            Editar
-                          </Button>
-                          <Button
-                            variant="contained"
-                            size="medium"
-                            color="error"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleDelete(payment._id);
-                            }}
-                            sx={{
-                              backgroundColor: '#e74c3c',
-                              '&:hover': {
-                                backgroundColor: '#c0392b'
-                              },
-                              borderRadius: 2,
-                              px: 3,
-                              py: 1,
-                              fontWeight: 600,
-                              textTransform: 'none',
-                              fontSize: '0.875rem'
+                            Data
+                          </Typography>
+                          <Typography 
+                            variant="h6" 
+                            sx={{ 
+                              fontWeight: 600, 
+                              color: '#2c3e50',
+                              fontSize: '1.1rem'
                             }}
                           >
-                            Excluir
-                          </Button>
+                            {formatDate(payment.data, payment)}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              color: '#7f8c8d', 
+                              fontSize: '0.75rem',
+                              fontWeight: 500,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                              mb: 0.5
+                            }}
+                          >
+                            Valor
+                          </Typography>
+                          <Typography 
+                            variant="h5" 
+                            sx={{ 
+                              fontWeight: 700, 
+                              color: '#27ae60',
+                              fontSize: '1.4rem'
+                            }}
+                          >
+                            {formatCurrency(payment.valor)}
+                          </Typography>
                         </Box>
                       </Box>
-                    </CardContent>
-                  </Card>
+                      
+                      <Box sx={{ 
+                        display: 'flex', 
+                        flexDirection: 'row', 
+                        gap: { xs: 2, sm: 3, md: 4 }, 
+                        flexWrap: 'wrap',
+                        justifyContent: { xs: 'center', sm: 'space-around' },
+                        px: { xs: 1, sm: 2, md: 3 }
+                      }}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={payment.realizada}
+                              onChange={() => handleStatusToggle(payment, 'realizada')}
+                              sx={{
+                                color: '#bdc3c7',
+                                '&.Mui-checked': {
+                                  color: '#27ae60'
+                                },
+                                '& .MuiSvgIcon-root': {
+                                  fontSize: '1.3rem'
+                                }
+                              }}
+                            />
+                          }
+                          label={
+                            <Typography sx={{ 
+                              fontSize: '0.875rem',
+                              fontWeight: 500,
+                              color: payment.realizada ? '#27ae60' : '#7f8c8d'
+                            }}>
+                              REALIZADA
+                            </Typography>
+                          }
+                        />
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={payment.paga === 'PAGA'}
+                              onChange={() => handleStatusToggle(payment, 'paga')}
+                              sx={{
+                                color: '#bdc3c7',
+                                '&.Mui-checked': {
+                                  color: '#27ae60'
+                                },
+                                '& .MuiSvgIcon-root': {
+                                  fontSize: '1.3rem'
+                                }
+                              }}
+                            />
+                          }
+                          label={
+                            <Typography sx={{ 
+                              fontSize: '0.875rem',
+                              fontWeight: 500,
+                              color: payment.paga === 'PAGA' ? '#27ae60' : '#7f8c8d'
+                            }}>
+                              PAGA
+                            </Typography>
+                          }
+                        />
+                      </Box>
+                      
+                      {payment.dataPagamento && (
+                        <Box sx={{ 
+                          backgroundColor: 'rgba(39, 174, 96, 0.08)',
+                          borderRadius: 2,
+                          p: 1.5,
+                          textAlign: 'center'
+                        }}>
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              color: '#27ae60',
+                              fontWeight: 500,
+                              fontSize: '0.875rem'
+                            }}
+                          >
+                            💰 Pago em: {formatDate(payment.dataPagamento)}
+                          </Typography>
+                        </Box>
+                      )}
+                      
+                      <Box sx={{ 
+                        display: 'flex', 
+                        gap: { xs: 2, sm: 3, md: 4 }, 
+                        justifyContent: { xs: 'center', sm: 'space-around' },
+                        pt: 1,
+                        px: { xs: 2, sm: 3, md: 4 }
+                      }}>
+                        <Button
+                          variant="contained"
+                          size="medium"
+                          onClick={() => handleEdit(payment)}
+                          sx={{
+                            backgroundColor: '#3498db',
+                            '&:hover': {
+                              backgroundColor: '#2980b9'
+                            },
+                            borderRadius: 2,
+                            px: 3,
+                            py: 1,
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            fontSize: '0.875rem'
+                          }}
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          variant="contained"
+                          size="medium"
+                          color="error"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDelete(payment._id);
+                          }}
+                          sx={{
+                            backgroundColor: '#e74c3c',
+                            '&:hover': {
+                              backgroundColor: '#c0392b'
+                            },
+                            borderRadius: 2,
+                            px: 3,
+                            py: 1,
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            fontSize: '0.875rem'
+                          }}
+                        >
+                          Excluir
+                        </Button>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
               ))}
             </Box>
           ) : (
-            // Desktop Table Layout
             <TableContainer component={Paper} sx={{ backgroundColor: '#fff', borderRadius: 0 }}>
               <Table>
                 <TableHead>
@@ -745,7 +726,6 @@ const PaymentList = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
-      {/* User Info Card - Maria de Lourdes */}
       <Box sx={{ width: '100%' }}>
         <Card sx={{ 
           mb: 3, 
@@ -757,109 +737,107 @@ const PaymentList = () => {
           borderLeft: '4px solid #2c3e50 !important'
         }}>
           <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-        <Typography 
-          variant="h5" 
-          gutterBottom 
-          sx={{ 
-            textAlign: 'center', 
-            color: '#2c3e50',
-            fontSize: { xs: '1.25rem', sm: '1.5rem' },
-            fontWeight: 600,
-            mb: 2
-          }}
-        >
-          MARIA DE LOURDES NUNES DA SILVA
-        </Typography>
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: { xs: 1.5, sm: 1 }, 
-          alignItems: 'center' 
-        }}>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 1,
-            flexWrap: 'wrap',
-            justifyContent: 'center'
-          }}>
-            <Typography sx={{ 
-              color: '#34495e',
-              fontSize: { xs: '0.875rem', sm: '1rem' },
-              textAlign: 'center'
-            }}>
-              Telefone: (11) 96346-2044
-            </Typography>
-            <IconButton
-              href="https://wa.me/5511963462044"
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                color: '#27ae60',
-                '&:hover': {
-                  backgroundColor: 'rgba(39, 174, 96, 0.04)'
-                },
-                borderRadius: '50%',
-                p: { xs: 0.5, sm: 1 }
+            <Typography 
+              variant="h5" 
+              gutterBottom 
+              sx={{ 
+                textAlign: 'center', 
+                color: '#2c3e50',
+                fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                fontWeight: 600,
+                mb: 2
               }}
             >
-              <WhatsAppIcon sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />
-            </IconButton>
-          </Box>
-          <Typography sx={{ 
-            color: '#34495e',
-            fontSize: { xs: '0.875rem', sm: '1rem' },
-            textAlign: 'center',
-            wordBreak: 'break-word'
-          }}>
-            Banco: BRADESCO AG 2894 CC 22871-0
-          </Typography>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 1,
-            flexWrap: 'wrap',
-            justifyContent: 'center'
-          }}>
-            <Typography sx={{ 
-              color: '#34495e',
-              fontSize: { xs: '0.875rem', sm: '1rem' },
-              textAlign: 'center'
-            }}>
-              PIX (CPF): 02833633807
+              MARIA DE LOURDES NUNES DA SILVA
             </Typography>
-            <IconButton
-              onClick={handleCopyPix}
-              sx={{
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: { xs: 1.5, sm: 1 }, 
+              alignItems: 'center' 
+            }}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                flexWrap: 'wrap',
+                justifyContent: 'center'
+              }}>
+                <Typography sx={{ 
+                  color: '#34495e',
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  textAlign: 'center'
+                }}>
+                  Telefone: (11) 96346-2044
+                </Typography>
+                <IconButton
+                  href="https://wa.me/5511963462044"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    color: '#27ae60',
+                    '&:hover': {
+                      backgroundColor: 'rgba(39, 174, 96, 0.04)'
+                    },
+                    borderRadius: '50%',
+                    p: { xs: 0.5, sm: 1 }
+                  }}
+                >
+                  <WhatsAppIcon sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />
+                </IconButton>
+              </Box>
+              <Typography sx={{ 
                 color: '#34495e',
-                '&:hover': {
-                  backgroundColor: 'rgba(52, 73, 94, 0.04)'
-                },
-                borderRadius: '50%',
-                p: { xs: 0.5, sm: 1 }
-              }}
-            >
-              <ContentCopyIcon sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />
-            </IconButton>
-          </Box>
-        </Box>
+                fontSize: { xs: '0.875rem', sm: '1rem' },
+                textAlign: 'center',
+                wordBreak: 'break-word'
+              }}>
+                Banco: BRADESCO AG 2894 CC 22871-0
+              </Typography>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                flexWrap: 'wrap',
+                justifyContent: 'center'
+              }}>
+                <Typography sx={{ 
+                  color: '#34495e',
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  textAlign: 'center'
+                }}>
+                  PIX (CPF): 02833633807
+                </Typography>
+                <IconButton
+                  onClick={handleCopyPix}
+                  sx={{
+                    color: '#34495e',
+                    '&:hover': {
+                      backgroundColor: 'rgba(52, 73, 94, 0.04)'
+                    },
+                    borderRadius: '50%',
+                    p: { xs: 0.5, sm: 1 }
+                  }}
+                >
+                  <ContentCopyIcon sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />
+                </IconButton>
+              </Box>
+            </Box>
           </CardContent>
         </Card>
       </Box>
 
-      {/* Payment Filters */}
       <PaymentFilters
         onFilterChange={handleFilterChange}
-        onGeneratePDF={handleGeneratePDF}
         onSendWhatsApp={handleSendWhatsApp}
         onNewPayment={() => setShowForm(true)}
         totalFiltered={filteredPayments.flatMap(monthData => monthData.payments).length}
         totalValue={filteredPayments.reduce((total, monthData) => total + (monthData.total || 0), 0)}
+        filteredData={filteredPayments.flatMap(monthData => monthData.payments)}
       />
 
       {renderMonthlyPayments()}
       
-      {/* Custom Delete Confirmation Dialog */}
       <Dialog
         open={deleteConfirmOpen}
         onClose={handleDeleteCancel}
@@ -883,15 +861,6 @@ const PaymentList = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* PDF Viewer Modal */}
-      <PDFViewerModal
-        open={pdfModalOpen}
-        onClose={() => setPdfModalOpen(false)}
-        pdfDoc={currentPdfDoc}
-        filename={`relatorio-faxina-${format(new Date(), 'yyyy-MM-dd')}.pdf`}
-        onWhatsAppShare={handleSendWhatsApp}
-      />
 
     </Container>
   );

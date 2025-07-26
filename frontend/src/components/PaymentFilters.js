@@ -1,24 +1,31 @@
 import React, { useState } from 'react';
+import PaymentReport from './PaymentReport';
+/* eslint-disable */
 import {
   Box,
+  Button,
   Card,
   CardContent,
-  Typography,
-  Grid,
-  TextField,
-  Button,
   FormControl,
+  FormControlLabel,
+  FormLabel,
+  Grid,
   InputLabel,
-  Select,
   MenuItem,
-  Chip,
-  Stack
+  Radio,
+  RadioGroup,
+  Select,
+  Stack,
+  Typography,
+  Tooltip,
+  TextField,
+  Chip
 } from '@mui/material';
+/* eslint-enable */
 import {
   FilterList as FilterIcon,
   Clear as ClearIcon,
-  PictureAsPdf as PdfIcon,
-  WhatsApp as WhatsAppIcon
+  PictureAsPdf as PdfIcon
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -26,7 +33,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ptBR } from 'date-fns/locale';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 
-const PaymentFilters = ({ onFilterChange, onGeneratePDF, onSendWhatsApp, onNewPayment, totalFiltered, totalValue }) => {
+const PaymentFilters = ({ onFilterChange, onSendWhatsApp, onNewPayment, totalFiltered, totalValue, filteredData }) => {
   const [filterType, setFilterType] = useState('all');
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -34,6 +41,7 @@ const PaymentFilters = ({ onFilterChange, onGeneratePDF, onSendWhatsApp, onNewPa
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [activeFilters, setActiveFilters] = useState([]);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   const months = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -97,6 +105,29 @@ const PaymentFilters = ({ onFilterChange, onGeneratePDF, onSendWhatsApp, onNewPa
       style: 'currency',
       currency: 'BRL'
     }).format(value);
+  };
+
+  const handleOpenReport = () => {
+    setIsReportOpen(true);
+  };
+
+  const handleCloseReport = () => {
+    setIsReportOpen(false);
+  };
+
+  const getReportTitle = () => {
+    switch (filterType) {
+      case 'date':
+        return `Pagamentos do dia ${selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''}`;
+      case 'month':
+        return `Pagamentos de ${months[selectedMonth]} de ${selectedYear}`;
+      case 'year':
+        return `Pagamentos do ano de ${selectedYear}`;
+      case 'period':
+        return `Pagamentos de ${startDate ? format(startDate, 'dd/MM/yyyy') : ''} até ${endDate ? format(endDate, 'dd/MM/yyyy') : ''}`;
+      default:
+        return 'Todos os Pagamentos';
+    }
   };
 
   return (
@@ -264,7 +295,7 @@ const PaymentFilters = ({ onFilterChange, onGeneratePDF, onSendWhatsApp, onNewPa
                     <strong>Valor Total:</strong> {formatCurrency(totalValue || 0)}
                   </Typography>
                 </Grid>
-                <Grid xs={12} sm={6}>
+                <Grid item xs={12} sm={6}>
                   <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
                     <Button
                       variant="contained"
@@ -279,26 +310,25 @@ const PaymentFilters = ({ onFilterChange, onGeneratePDF, onSendWhatsApp, onNewPa
                     >
                       + Novo Pagamento
                     </Button>
+
+
+
                     <Button
                       variant="contained"
-                      color="error"
                       startIcon={<PdfIcon />}
-                      onClick={onGeneratePDF}
+                      onClick={handleOpenReport}
                       disabled={totalFiltered === 0}
                       size="small"
+                      sx={{
+                        backgroundColor: '#d32f2f',
+                        '&:hover': {
+                          backgroundColor: '#b71c1c'
+                        }
+                      }}
                     >
-                      Gerar PDF
+                      Visualizar PDF
                     </Button>
-                    <Button
-                      variant="contained"
-                      color="success"
-                      startIcon={<WhatsAppIcon />}
-                      onClick={onSendWhatsApp}
-                      disabled={totalFiltered === 0}
-                      size="small"
-                    >
-                      WhatsApp
-                    </Button>
+                    
                   </Stack>
                 </Grid>
               </Grid>
@@ -306,6 +336,16 @@ const PaymentFilters = ({ onFilterChange, onGeneratePDF, onSendWhatsApp, onNewPa
           )}
         </CardContent>
       </Card>
+      
+
+      {/* Modal de relatório de pagamentos */}
+      <PaymentReport
+        open={isReportOpen}
+        onClose={handleCloseReport}
+        payments={filteredData}
+        title={getReportTitle()}
+        totalValue={totalValue}
+      />
     </LocalizationProvider>
   );
 };

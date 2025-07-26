@@ -1,8 +1,49 @@
 const Payment = require('../models/Payment');
 
-// Listar todos os pagamentos com agrupamento mensal
+// Listar todos os pagamentos com agrupamento mensal e suporte a filtros
 exports.list = async (req, res) => {
   try {
+    console.log('[DEBUG PaymentController] Filtros recebidos:', req.query);
+    
+    // Construir filtro dinâmico
+    const filter = {};
+    
+    // Filtrar por período (startDate e endDate)
+    if (req.query.startDate || req.query.endDate) {
+      filter.data = {};
+      
+      if (req.query.startDate) {
+        filter.data.$gte = new Date(req.query.startDate);
+      }
+      
+      if (req.query.endDate) {
+        // Ajustar endDate para incluir o dia inteiro (23:59:59)
+        const endDate = new Date(req.query.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        filter.data.$lte = endDate;
+      }
+    }
+    
+    // Filtrar por cliente (busca parcial case-insensitive)
+    if (req.query.client) {
+      filter['client.name'] = { $regex: req.query.client, $options: 'i' };
+    }
+    
+    // Filtrar por status
+    if (req.query.status) {
+      filter.status = req.query.status;
+    }
+    
+    console.log('[DEBUG PaymentController] Filtro construído:', filter);
+    
+    // Se tiver filtros, retornar lista plana de pagamentos em vez de agrupados
+    if (Object.keys(filter).length > 0) {
+      const payments = await Payment.find(filter).sort({ data: -1 });
+      console.log(`[DEBUG PaymentController] ${payments.length} pagamentos encontrados com filtros`);
+      return res.json(payments);
+    }
+    
+    // Sem filtros, usar comportamento padrão (agrupado por mês)
     const payments = await Payment.find().sort({ data: 1 });
     
     // Agrupar pagamentos por mês
